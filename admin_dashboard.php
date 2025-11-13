@@ -1,9 +1,16 @@
 <?php
+// Initialize the session
 session_start();
 
 // Check if the user is logged in, if not then redirect him to login page
 if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
     header("location: login.php");
+    exit;
+}
+
+// Check if the logged-in user is an admin. If not, redirect to user dashboard.
+if(!isset($_SESSION["is_admin"]) || $_SESSION["is_admin"] !== true){
+    header("location: user_dashboard.php");
     exit;
 }
 
@@ -101,6 +108,9 @@ $result = mysqli_query($link, $sql);
 
         <h3>Post Management</h3>
         <p>This is where you can manage posts.</p>
+
+        <h3>Comment Management</h3>
+        <p>This is where you can <a href="admin_comments.php">manage comments</a>.</p>
 
     </div>
 </body>

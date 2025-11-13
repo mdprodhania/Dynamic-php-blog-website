@@ -2,18 +2,15 @@
 // Initialize the session
 session_start();
 
-// Check if the user is already logged in, if yes then redirect him to welcome page
-if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true){
-    header("location: admin_dashboard.php");
-    exit;
-}
-
 // Include config file
 require_once "config.php";
 
 // Define variables and initialize with empty values
 $username = $password = "";
 $username_err = $password_err = $login_err = "";
+
+// Store the original username input before potential modification
+$input_username = "";
 
 // Processing form data when form is submitted
 if($_SERVER["REQUEST_METHOD"] == "POST"){
@@ -23,6 +20,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         $username_err = "Please enter username.";
     } else{
         $username = trim($_POST["username"]);
+        $input_username = $username; // Store the original input
     }
 
     // Check if password is empty
@@ -34,53 +32,58 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
 
     // Validate credentials
     if(empty($username_err) && empty($password_err)){
-        // Prepare a select statement
-        $sql = "SELECT id, username, password FROM admins WHERE username = ?";
-
-        if($stmt = mysqli_prepare($link, $sql)){
-            // Bind variables to the prepared statement as parameters
-            mysqli_stmt_bind_param($stmt, "s", $param_username);
-
-            // Set parameters
+        // Check in admins table
+        $sql_admin = "SELECT id, username, password FROM admins WHERE username = ?";
+        if($stmt_admin = mysqli_prepare($link, $sql_admin)){
+            mysqli_stmt_bind_param($stmt_admin, "s", $param_username);
             $param_username = $username;
-
-            // Attempt to execute the prepared statement
-            if(mysqli_stmt_execute($stmt)){
-                // Store result
-                mysqli_stmt_store_result($stmt);
-
-                // Check if username exists, if yes then verify password
-                if(mysqli_stmt_num_rows($stmt) == 1){
-                    // Bind result variables
-                    mysqli_stmt_bind_result($stmt, $id, $username, $hashed_password);
-                    if(mysqli_stmt_fetch($stmt)){
+            if(mysqli_stmt_execute($stmt_admin)){
+                mysqli_stmt_store_result($stmt_admin);
+                if(mysqli_stmt_num_rows($stmt_admin) == 1){
+                    mysqli_stmt_bind_result($stmt_admin, $id, $username, $hashed_password);
+                    if(mysqli_stmt_fetch($stmt_admin)){
                         if(password_verify($password, $hashed_password)){
-                            // Password is correct, so start a new session
                             session_start();
-
-                            // Store data in session variables
                             $_SESSION["loggedin"] = true;
                             $_SESSION["id"] = $id;
                             $_SESSION["username"] = $username;
-
-                            // Redirect user to welcome page
+                            $_SESSION["is_admin"] = true; // Mark as admin
                             header("location: admin_dashboard.php");
-                        } else{
-                            // Password is not valid, display a generic error message
-                            $login_err = "Invalid username or password.";
+                            exit();
                         }
                     }
-                } else{
-                    // Username doesn't exist, display a generic error message
-                    $login_err = "Invalid username or password.";
                 }
-            } else{
-                echo "Oops! Something went wrong. Please try again later.";
             }
-
-            // Close statement
-            mysqli_stmt_close($stmt);
+            mysqli_stmt_close($stmt_admin);
         }
+
+        // If not an admin, check in users table
+        $sql_user = "SELECT id, username, password FROM users WHERE username = ?";
+        if($stmt_user = mysqli_prepare($link, $sql_user)){
+            mysqli_stmt_bind_param($stmt_user, "s", $param_username);
+            $param_username = $input_username; // Use the original input username
+            if(mysqli_stmt_execute($stmt_user)){
+                mysqli_stmt_store_result($stmt_user);
+                if(mysqli_stmt_num_rows($stmt_user) == 1){
+                    mysqli_stmt_bind_result($stmt_user, $id, $username, $hashed_password);
+                    if(mysqli_stmt_fetch($stmt_user)){
+                        if(password_verify($password, $hashed_password)){
+                            session_start();
+                            $_SESSION["loggedin"] = true;
+                            $_SESSION["id"] = $id;
+                            $_SESSION["username"] = $username;
+                            $_SESSION["is_admin"] = false; // Mark as regular user
+                            header("location: user_dashboard.php"); // Redirect to user dashboard
+                            exit();
+                        }
+                    }
+                }
+            }
+            mysqli_stmt_close($stmt_user);
+        }
+
+        // If no user found in either table or password incorrect
+        $login_err = "Invalid username or password.";
     }
 
     // Close connection
@@ -93,12 +96,12 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Login</title>
+    <title>Login</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="login-container">
-        <h2>Admin Login</h2>
+        <h2>Login</h2>
         <?php
         if(!empty($login_err)){
             echo '<div class="alert alert-danger">' . $login_err . '</div>';
@@ -117,6 +120,7 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
             </div>
             <button type="submit">Login</button>
         </form>
+        <p>Don't have an account? <a href="register.php">Sign up now</a>.</p>
     </div>
 </body>
 </html>

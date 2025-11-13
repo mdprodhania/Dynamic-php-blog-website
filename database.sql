@@ -1,5 +1,5 @@
-CREATE DATABASE IF NOT EXISTS dynamic_blog;
-USE dynamic_blog;
+CREATE DATABASE IF NOT EXISTS `dynamic-php-blog-website`;
+USE `dynamic-php-blog-website`;
 
 CREATE TABLE IF NOT EXISTS admins (
     id INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
@@ -13,4 +13,26 @@ CREATE TABLE IF NOT EXISTS users (
     username VARCHAR(50) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS posts (
+    id INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL,
+    title VARCHAR(255) NOT NULL,
+    content TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS comments (
+    id INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
+    post_id INT NOT NULL,
+    user_id INT, -- NULL if visitor is not logged in
+    author_name VARCHAR(255) NOT NULL, -- To store name for unlogged users
+    comment_content TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    is_approved BOOLEAN DEFAULT FALSE,
+    FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
