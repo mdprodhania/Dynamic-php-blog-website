@@ -12,8 +12,24 @@ if(isset($_GET["id"]) && !empty(trim($_GET["id"]))){
 
     $post_id = trim($_GET["id"]);
 
+    // Increment view count if not already viewed in this session
+    if(!isset($_SESSION["viewed_posts"])){
+        $_SESSION["viewed_posts"] = array();
+    }
+
+    if(!in_array($post_id, $_SESSION["viewed_posts"])){
+        $sql_increment_view = "UPDATE posts SET view_count = view_count + 1 WHERE id = ?";
+        if($stmt_view = mysqli_prepare($link, $sql_increment_view)){
+            mysqli_stmt_bind_param($stmt_view, "i", $param_post_id_view);
+            $param_post_id_view = $post_id;
+            mysqli_stmt_execute($stmt_view);
+            mysqli_stmt_close($stmt_view);
+            $_SESSION["viewed_posts"][] = $post_id;
+        }
+    }
+
     // Prepare a select statement for the post
-    $sql_post = "SELECT posts.id, posts.title, posts.content, posts.created_at, posts.updated_at, users.username FROM posts JOIN users ON posts.user_id = users.id WHERE posts.id = ?";
+    $sql_post = "SELECT posts.id, posts.title, posts.content, posts.likes_count, posts.view_count, posts.created_at, posts.updated_at, users.username FROM posts JOIN users ON posts.user_id = users.id WHERE posts.id = ?";
 
     if($stmt_post = mysqli_prepare($link, $sql_post)){
         mysqli_stmt_bind_param($stmt_post, "i", $param_post_id);
@@ -29,6 +45,23 @@ if(isset($_GET["id"]) && !empty(trim($_GET["id"]))){
                 $created_at = $row_post["created_at"];
                 $updated_at = $row_post["updated_at"];
                 $author_username = $row_post["username"];
+                $likes_count = $row_post["likes_count"];
+                $view_count = $row_post["view_count"];
+
+                $is_liked_by_user = false;
+                if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true){
+                    $user_id = $_SESSION["id"];
+                    $sql_check_like = "SELECT id FROM likes WHERE post_id = ? AND user_id = ?";
+                    if($stmt_check_like = mysqli_prepare($link, $sql_check_like)){
+                        mysqli_stmt_bind_param($stmt_check_like, "ii", $post_id, $user_id);
+                        mysqli_stmt_execute($stmt_check_like);
+                        mysqli_stmt_store_result($stmt_check_like);
+                        if(mysqli_stmt_num_rows($stmt_check_like) > 0){
+                            $is_liked_by_user = true;
+                        }
+                        mysqli_stmt_close($stmt_check_like);
+                    }
+                }
             } else{
                 header("location: error.php");
                 exit();
@@ -133,6 +166,24 @@ if(isset($_GET["id"]) && !empty(trim($_GET["id"]))){
             color: #777;
             margin-left: 10px;
         }
+        .like-button {
+            background-color: #007bff;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+            margin-right: 10px;
+        }
+        .like-button.liked {
+            background-color: #28a745; /* Green for liked state */
+        }
+        .like-count, .view-count {
+            font-size: 0.9em;
+            color: #555;
+            margin-right: 15px;
+        }
         .comment-form {
             margin-top: 30px;
         }
@@ -173,6 +224,19 @@ if(isset($_GET["id"]) && !empty(trim($_GET["id"]))){
                         <label>Last Updated At</label>
                         <p><b><?php echo $updated_at; ?></b></p>
                     </div>
+
+                    <div class="post-actions">
+                        <?php if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true): ?>
+                            <button id="likeBtn" class="like-button <?php echo $is_liked_by_user ? 'liked' : ''; ?>" data-post-id="<?php echo $post_id; ?>">
+                                <?php echo $is_liked_by_user ? 'Liked' : 'Like'; ?>
+                            </button>
+                        <?php else: // Not logged in, can't like, but still show count ?>
+                             <button class="like-button" disabled>Login to Like</button>
+                        <?php endif; ?>
+                        <span class="like-count">Likes: <span id="likesCountDisplay"><?php echo $likes_count; ?></span></span>
+                        <span class="view-count">Views: <?php echo $view_count; ?></span>
+                    </div>
+
                     <p>
                         <?php if(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true && $_SESSION["is_admin"] === true): ?>
                             <a href="admin_dashboard.php" class="btn btn-primary">Back to Admin Dashboard</a>
@@ -222,5 +286,45 @@ if(isset($_GET["id"]) && !empty(trim($_GET["id"]))){
             </div>
         </div>
     </div>
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const likeBtn = document.getElementById('likeBtn');
+        const likesCountDisplay = document.getElementById('likesCountDisplay');
+
+        if (likeBtn) {
+            likeBtn.addEventListener('click', function() {
+                const postId = this.dataset.postId;
+                
+                fetch('toggle_like.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: 'post_id=' + postId
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        likesCountDisplay.textContent = data.new_likes_count;
+                        if (data.is_liked) {
+                            likeBtn.classList.add('liked');
+                            likeBtn.textContent = 'Liked';
+                        } else {
+                            likeBtn.classList.remove('liked');
+                            likeBtn.textContent = 'Like';
+                        }
+                        console.log(data.message);
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while processing your like.');
+                });
+            });
+        }
+    });
+    </script>
 </body>
 </html>
