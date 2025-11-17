@@ -13,7 +13,12 @@ require_once "config.php";
 
 // Define variables and initialize with empty values
 $title = $content = "";
+$category_id = 0;
 $title_err = $content_err = "";
+
+// Get categories for the dropdown
+$sql_categories = "SELECT id, name FROM categories ORDER BY name ASC";
+$result_categories = mysqli_query($link, $sql_categories);
 
 // Processing form data when form is submitted
 if($_SERVER["REQUEST_METHOD"] == "POST"){
@@ -32,17 +37,21 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
         $content = trim($_POST["content"]);
     }
 
+    // Get category ID
+    $category_id = isset($_POST['category_id']) ? intval($_POST['category_id']) : NULL;
+
     // Check input errors before inserting in database
     if(empty($title_err) && empty($content_err)){
         // Prepare an insert statement
-        $sql = "INSERT INTO posts (user_id, title, content) VALUES (?, ?, ?)";
+        $sql = "INSERT INTO posts (user_id, category_id, title, content) VALUES (?, ?, ?, ?)";
 
         if($stmt = mysqli_prepare($link, $sql)){
             // Bind variables to the prepared statement as parameters
-            mysqli_stmt_bind_param($stmt, "iss", $param_user_id, $param_title, $param_content);
+            mysqli_stmt_bind_param($stmt, "iiss", $param_user_id, $param_category_id, $param_title, $param_content);
 
             // Set parameters
             $param_user_id = $_SESSION["id"];
+            $param_category_id = $category_id;
             $param_title = $title;
             $param_content = $content;
 
@@ -95,6 +104,20 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                             <label>Content</label>
                             <textarea name="content" class="form-control <?php echo (!empty($content_err)) ? 'is-invalid' : ''; ?>" rows="5"><?php echo $content; ?></textarea>
                             <span class="invalid-feedback"><?php echo $content_err; ?></span>
+                        </div>
+                        <div class="form-group">
+                            <label>Category</label>
+                            <select name="category_id" class="form-control">
+                                <option value="NULL">Select Category</option>
+                                <?php
+                                if ($result_categories && mysqli_num_rows($result_categories) > 0) {
+                                    while ($cat = mysqli_fetch_array($result_categories)) {
+                                        echo '<option value="' . $cat['id'] . '" ' . (($category_id == $cat['id']) ? 'selected' : '') . '>' . htmlspecialchars($cat['name']) . '</option>';
+                                    }
+                                    mysqli_free_result($result_categories);
+                                }
+                                ?>
+                            </select>
                         </div>
                         <input type="submit" class="btn btn-primary" value="Submit">
                         <a href="user_dashboard.php" class="btn btn-secondary ml-2">Cancel</a>

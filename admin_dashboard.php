@@ -112,6 +112,9 @@ $result = mysqli_query($link, $sql);
         <h3>Comment Management</h3>
         <p>This is where you can <a href="admin_comments.php">manage comments</a>.</p>
 
+        <h3>Category Management</h3>
+        <p>This is where you can <a href="admin_categories.php">manage post categories</a>.</p>
+
     </div>
 </body>
 </html>

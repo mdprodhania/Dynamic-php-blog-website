@@ -8,18 +8,12 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
     exit;
 }
 
-// Check if the logged-in user is an admin. If so, redirect to admin dashboard.
-if(isset($_SESSION["is_admin"]) && $_SESSION["is_admin"] === true){
-    header("location: admin_dashboard.php");
-    exit;
-}
-
 // Include config file
 require_once "config.php";
 
 // Fetch posts for the current user
 $user_id = $_SESSION["id"];
-$sql = "SELECT id, title, created_at FROM posts WHERE user_id = ? ORDER BY created_at DESC";
+$sql = "SELECT posts.id, posts.title, posts.created_at, posts.likes_count, posts.view_count, categories.name AS category_name FROM posts LEFT JOIN categories ON posts.category_id = categories.id WHERE user_id = ? ORDER BY created_at DESC";
 
 if($stmt = mysqli_prepare($link, $sql)){
     mysqli_stmt_bind_param($stmt, "i", $user_id);
@@ -81,7 +75,10 @@ if($stmt = mysqli_prepare($link, $sql)){
                     echo "<tr>";
                         echo "<th>#</th>";
                         echo "<th>Title</th>";
+                        echo "<th>Category</th>";
                         echo "<th>Created At</th>";
+                        echo "<th>Likes</th>";
+                        echo "<th>Views</th>";
                         echo "<th>Action</th>";
                     echo "</tr>";
                 echo "</thead>";
@@ -89,8 +86,11 @@ if($stmt = mysqli_prepare($link, $sql)){
                 while($row = mysqli_fetch_array($result)){
                     echo "<tr>";
                         echo "<td>" . $row['id'] . "</td>";
-                        echo "<td>" . $row['title'] . "</td>";
+                        echo "<td>" . htmlspecialchars($row['title']) . "</td>";
+                        echo "<td>" . (empty($row['category_name']) ? 'Uncategorized' : htmlspecialchars($row['category_name'])) . "</td>";
                         echo "<td>" . $row['created_at'] . "</td>";
+                        echo "<td>" . $row['likes_count'] . "</td>";
+                        echo "<td>" . $row['view_count'] . "</td>";
                         echo "<td>";
                             echo "<a href=\"read_post.php?id=". $row['id'] ."\" title=\"View Post\" data-toggle=\"tooltip\"><span class=\"glyphicon glyphicon-eye-open\">View</span></a>";
                             echo "<a href=\"update_post.php?id=". $row['id'] ."\" title=\"Update Post\" data-toggle=\"tooltip\"><span class=\"glyphicon glyphicon-pencil\">Edit</span></a>";

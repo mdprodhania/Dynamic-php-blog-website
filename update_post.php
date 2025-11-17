@@ -13,7 +13,12 @@ require_once "config.php";
 
 // Define variables and initialize with empty values
 $title = $content = "";
+$category_id = 0;
 $title_err = $content_err = "";
+
+// Get categories for the dropdown
+$sql_categories = "SELECT id, name FROM categories ORDER BY name ASC";
+$result_categories = mysqli_query($link, $sql_categories);
 
 // Processing form data when form is submitted
 if(isset($_POST["id"]) && !empty($_POST["id"])){
@@ -35,18 +40,22 @@ if(isset($_POST["id"]) && !empty($_POST["id"])){
         $content = trim($_POST["content"]);
     }
 
+    // Get category ID
+    $category_id = isset($_POST['category_id']) ? intval($_POST['category_id']) : NULL;
+
     // Check input errors before updating the database
     if(empty($title_err) && empty($content_err)){
         // Prepare an update statement
-        $sql = "UPDATE posts SET title = ?, content = ? WHERE id = ? AND user_id = ?";
+        $sql = "UPDATE posts SET title = ?, content = ?, category_id = ? WHERE id = ? AND user_id = ?";
 
         if($stmt = mysqli_prepare($link, $sql)){
             // Bind variables to the prepared statement as parameters
-            mysqli_stmt_bind_param($stmt, "ssii", $param_title, $param_content, $param_id, $param_user_id);
+            mysqli_stmt_bind_param($stmt, "ssiii", $param_title, $param_content, $param_category_id, $param_id, $param_user_id);
 
             // Set parameters
             $param_title = $title;
             $param_content = $content;
+            $param_category_id = $category_id;
             $param_id = $id;
             $param_user_id = $user_id;
 
@@ -74,7 +83,7 @@ if(isset($_POST["id"]) && !empty($_POST["id"])){
         $user_id = $_SESSION["id"];
 
         // Prepare a select statement
-        $sql = "SELECT * FROM posts WHERE id = ? AND user_id = ?";
+        $sql = "SELECT posts.*, categories.name AS category_name FROM posts LEFT JOIN categories ON posts.category_id = categories.id WHERE posts.id = ? AND posts.user_id = ?";
         if($stmt = mysqli_prepare($link, $sql)){
             // Bind variables to the prepared statement as parameters
             mysqli_stmt_bind_param($stmt, "ii", $param_id, $param_user_id);
@@ -93,6 +102,7 @@ if(isset($_POST["id"]) && !empty($_POST["id"])){
                     // Retrieve individual field value
                     $title = $row["title"];
                     $content = $row["content"];
+                    $category_id = $row["category_id"];
                 } else{
                     // URL doesn't contain valid id or user doesn't own the post. Redirect to error page
                     header("location: error.php");
@@ -147,6 +157,20 @@ if(isset($_POST["id"]) && !empty($_POST["id"])){
                             <label>Content</label>
                             <textarea name="content" class="form-control <?php echo (!empty($content_err)) ? 'is-invalid' : ''; ?>" rows="5"><?php echo $content; ?></textarea>
                             <span class="invalid-feedback"><?php echo $content_err; ?></span>
+                        </div>
+                        <div class="form-group">
+                            <label>Category</label>
+                            <select name="category_id" class="form-control">
+                                <option value="NULL">Select Category</option>
+                                <?php
+                                if ($result_categories && mysqli_num_rows($result_categories) > 0) {
+                                    while ($cat = mysqli_fetch_array($result_categories)) {
+                                        echo '<option value="' . $cat['id'] . '" ' . (($category_id == $cat['id']) ? 'selected' : '') . '>' . htmlspecialchars($cat['name']) . '</option>';
+                                    }
+                                    mysqli_free_result($result_categories);
+                                }
+                                ?>
+                            </select>
                         </div>
                         <input type="hidden" name="id" value="<?php echo $id; ?>"/>
                         <input type="submit" class="btn btn-primary" value="Submit">
