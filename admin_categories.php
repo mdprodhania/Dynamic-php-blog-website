@@ -1,17 +1,13 @@
 <?php
-// Initialize the session
 session_start();
 
-// Check if the user is logged in and is an admin, otherwise redirect
 if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || !isset($_SESSION["is_admin"]) || $_SESSION["is_admin"] !== true){
     header("location: login.php");
     exit;
 }
 
-// Include config file
 require_once "config.php";
 
-// Fetch all categories from the database
 $sql = "SELECT id, name, created_at FROM categories ORDER BY name ASC";
 $result = mysqli_query($link, $sql);
 
