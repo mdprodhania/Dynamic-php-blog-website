@@ -1,16 +1,13 @@
 <?php
-// Include config file
+
 require_once "config.php";
 
-// Get categories for filter dropdown
 $sql_categories = "SELECT id, name FROM categories ORDER BY name ASC";
 $result_categories = mysqli_query($link, $sql_categories);
 
-// Initialize variables for filtering and search
 $filter_category_id = isset($_GET['category_id']) ? intval($_GET['category_id']) : 0;
 $search_keyword = isset($_GET['search']) ? trim($_GET['search']) : '';
 
-// Build the WHERE clause for post fetching
 $where_clauses = [];
 $param_types = '';
 $param_values = [];
@@ -46,7 +43,6 @@ if ($stmt_posts = mysqli_prepare($link, $sql_posts)) {
 
 mysqli_close($link);
 
-// Function to truncate text
 function truncate($text, $chars = 100) {
     if (strlen($text) <= $chars) {
         return $text;
