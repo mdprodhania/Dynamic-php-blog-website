@@ -1,17 +1,13 @@
 <?php
-// Initialize the session
 session_start();
 
-// Check if the user is logged in, if not then redirect him to login page
 if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
     header("location: login.php");
     exit;
 }
 
-// Include config file
 require_once "config.php";
 
-// Fetch posts for the current user
 $user_id = $_SESSION["id"];
 $sql = "SELECT posts.id, posts.title, posts.created_at, posts.likes_count, posts.view_count, categories.name AS category_name FROM posts LEFT JOIN categories ON posts.category_id = categories.id WHERE user_id = ? ORDER BY created_at DESC";
 
@@ -100,7 +96,6 @@ if($stmt = mysqli_prepare($link, $sql)){
                 }
                 echo "</tbody>";
             echo "</table>";
-            // Free result set
             mysqli_free_result($result);
         } else{
             echo '<div class="alert alert-info"><em>No posts were found.</em></div>';
