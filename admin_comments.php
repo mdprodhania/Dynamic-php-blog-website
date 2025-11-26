@@ -1,17 +1,13 @@
 <?php
-// Initialize the session
 session_start();
 
-// Check if the user is logged in and is an admin, otherwise redirect
 if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || !isset($_SESSION["is_admin"]) || $_SESSION["is_admin"] !== true){
     header("location: login.php");
     exit;
 }
 
-// Include config file
 require_once "config.php";
 
-// Fetch all comments from the database
 $sql = "SELECT comments.id, comments.comment_content, comments.created_at, comments.is_approved, comments.author_name, posts.title AS post_title, posts.id AS post_id FROM comments JOIN posts ON comments.post_id = posts.id ORDER BY comments.created_at DESC";
 $result = mysqli_query($link, $sql);
 
@@ -102,7 +98,6 @@ $result = mysqli_query($link, $sql);
                     }
                     echo "</tbody>";
                 echo "</table>";
-                // Free result set
                 mysqli_free_result($result);
             } else{
                 echo '<div class="alert alert-info"><em>No comments were found.</em></div>';
@@ -111,7 +106,6 @@ $result = mysqli_query($link, $sql);
             echo "Oops! Something went wrong. Please try again later.";
         }
 
-        // Close connection
         mysqli_close($link);
         ?>
 
