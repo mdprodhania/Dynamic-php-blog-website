@@ -1,40 +1,29 @@
 <?php
-// Initialize the session
 session_start();
 
-// Check if the user is logged in and is an admin, otherwise redirect
 if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true || !isset($_SESSION["is_admin"]) || $_SESSION["is_admin"] !== true){
     header("location: login.php");
     exit;
 }
 
-// Include config file
 require_once "config.php";
 
-// Define variables and initialize with empty values
 $name = "";
 $name_err = "";
 
-// Processing form data when form is submitted
 if($_SERVER["REQUEST_METHOD"] == "POST"){
 
-    // Validate name
     if(empty(trim($_POST["name"]))){
         $name_err = "Please enter a category name.";
     } else{
-        // Prepare a select statement
         $sql = "SELECT id FROM categories WHERE name = ?";
 
         if($stmt = mysqli_prepare($link, $sql)){
-            // Bind variables to the prepared statement as parameters
             mysqli_stmt_bind_param($stmt, "s", $param_name);
 
-            // Set parameters
             $param_name = trim($_POST["name"]);
 
-            // Attempt to execute the prepared statement
             if(mysqli_stmt_execute($stmt)){
-                // Store result
                 mysqli_stmt_store_result($stmt);
 
                 if(mysqli_stmt_num_rows($stmt) == 1){
@@ -46,25 +35,19 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                 echo "Oops! Something went wrong. Please try again later.";
             }
 
-            // Close statement
             mysqli_stmt_close($stmt);
         }
     }
 
-    // Check input errors before inserting in database
     if(empty($name_err)){
 
-        // Prepare an insert statement
         $sql = "INSERT INTO categories (name) VALUES (?)";
 
         if($stmt = mysqli_prepare($link, $sql)){
-            // Bind variables to the prepared statement as parameters
             mysqli_stmt_bind_param($stmt, "s", $param_name);
 
-            // Set parameters
             $param_name = $name;
 
-            // Attempt to execute the prepared statement
             if(mysqli_stmt_execute($stmt)){
                 $_SESSION["category_action_message"] = "Category added successfully.";
                 header("location: admin_categories.php");
@@ -73,12 +56,10 @@ if($_SERVER["REQUEST_METHOD"] == "POST"){
                 echo "Oops! Something went wrong. Please try again later.";
             }
 
-            // Close statement
             mysqli_stmt_close($stmt);
         }
     }
 
-    // Close connection
     mysqli_close($link);
 }
 ?>
