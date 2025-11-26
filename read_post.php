@@ -1,18 +1,12 @@
 <?php
-// Initialize the session
 session_start();
 
-// Check if the user is logged in, if not then redirect him to login page
-// This read_post.php can be accessed by both logged in users and visitors, so no redirect here.
 
-// Check existence of id parameter before processing further
 if(isset($_GET["id"]) && !empty(trim($_GET["id"]))){
-    // Include config file
     require_once "config.php";
 
     $post_id = trim($_GET["id"]);
 
-    // Increment view count if not already viewed in this session
     if(!isset($_SESSION["viewed_posts"])){
         $_SESSION["viewed_posts"] = array();
     }
@@ -28,7 +22,6 @@ if(isset($_GET["id"]) && !empty(trim($_GET["id"]))){
         }
     }
 
-    // Prepare a select statement for the post
     $sql_post = "SELECT posts.id, posts.title, posts.content, posts.likes_count, posts.view_count, posts.created_at, posts.updated_at, users.username FROM posts JOIN users ON posts.user_id = users.id WHERE posts.id = ?";
 
     if($stmt_post = mysqli_prepare($link, $sql_post)){
@@ -72,7 +65,6 @@ if(isset($_GET["id"]) && !empty(trim($_GET["id"]))){
         mysqli_stmt_close($stmt_post);
     }
 
-    // Fetch approved comments for this post
     $sql_comments = "SELECT comments.comment_content, comments.created_at, comments.author_name FROM comments WHERE comments.post_id = ? AND comments.is_approved = TRUE ORDER BY comments.created_at ASC";
     $comments_result = null;
     if($stmt_comments = mysqli_prepare($link, $sql_comments)){
@@ -86,7 +78,6 @@ if(isset($_GET["id"]) && !empty(trim($_GET["id"]))){
         mysqli_stmt_close($stmt_comments);
     }
 
-    // Handle comment submission
     $comment_content = $author_name = "";
     $comment_content_err = $author_name_err = "";
 
@@ -98,14 +89,12 @@ if(isset($_GET["id"]) && !empty(trim($_GET["id"]))){
         }
 
         if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
-            // Visitor is not logged in, require author name
             if(empty(trim($_POST["author_name"]))){
                 $author_name_err = "Please enter your name.";
             } else{
                 $author_name = trim($_POST["author_name"]);
             }
         } else {
-            // User is logged in, use their username as author name
             $author_name = $_SESSION["username"];
         }
 
@@ -116,7 +105,6 @@ if(isset($_GET["id"]) && !empty(trim($_GET["id"]))){
                 mysqli_stmt_bind_param($stmt_insert, "isss", $post_id, $param_user_id, $author_name, $comment_content);
 
                 if(mysqli_stmt_execute($stmt_insert)){
-                    // Redirect to refresh page and clear form
                     header("location: read_post.php?id=" . $post_id);
                     exit();
                 } else{
@@ -177,7 +165,7 @@ if(isset($_GET["id"]) && !empty(trim($_GET["id"]))){
             margin-right: 10px;
         }
         .like-button.liked {
-            background-color: #28a745; /* Green for liked state */
+            background-color: #28a745; 
         }
         .like-count, .view-count {
             font-size: 0.9em;
@@ -230,7 +218,7 @@ if(isset($_GET["id"]) && !empty(trim($_GET["id"]))){
                             <button id="likeBtn" class="like-button <?php echo $is_liked_by_user ? 'liked' : ''; ?>" data-post-id="<?php echo $post_id; ?>">
                                 <?php echo $is_liked_by_user ? 'Liked' : 'Like'; ?>
                             </button>
-                        <?php else: // Not logged in, can't like, but still show count ?>
+                        <?php else:  ?>
                              <button class="like-button" disabled>Login to Like</button>
                         <?php endif; ?>
                         <span class="like-count">Likes: <span id="likesCountDisplay"><?php echo $likes_count; ?></span></span>
@@ -242,7 +230,7 @@ if(isset($_GET["id"]) && !empty(trim($_GET["id"]))){
                             <a href="admin_dashboard.php" class="btn btn-primary">Back to Admin Dashboard</a>
                         <?php elseif(isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true && $_SESSION["is_admin"] === false): ?>
                             <a href="user_dashboard.php" class="btn btn-primary">Back to Your Posts</a>
-                        <?php else: // Visitor ?>
+                        <?php else:  ?>
                             <a href="index.php" class="btn btn-secondary">Back to Home</a>
                         <?php endif; ?>
                     </p>
