@@ -1,23 +1,18 @@
 <?php
-// Initialize the session
 session_start();
 
-// Check if the user is logged in, if not then redirect him to login page
 if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){
     header("location: login.php");
     exit;
 }
 
-// Check if the logged-in user is an admin. If not, redirect to user dashboard.
 if(!isset($_SESSION["is_admin"]) || $_SESSION["is_admin"] !== true){
     header("location: user_dashboard.php");
     exit;
 }
 
-// Include config file
 require_once "config.php";
 
-// Fetch users from the database (assuming a 'users' table exists)
 $sql = "SELECT id, username, created_at FROM users";
 $result = mysqli_query($link, $sql);
 
@@ -93,7 +88,6 @@ $result = mysqli_query($link, $sql);
                     }
                     echo "</tbody>";
                 echo "</table>";
-                // Free result set
                 mysqli_free_result($result);
             } else{
                 echo '<div class="alert alert-danger"><em>No records were found.</em></div>';
@@ -102,7 +96,6 @@ $result = mysqli_query($link, $sql);
             echo "Oops! Something went wrong. Please try again later.";
         }
 
-        // Close connection
         mysqli_close($link);
         ?>
 
