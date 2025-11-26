@@ -32,8 +32,8 @@ CREATE TABLE IF NOT EXISTS posts (
 CREATE TABLE IF NOT EXISTS comments (
     id INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
     post_id INT NOT NULL,
-    user_id INT, -- NULL if visitor is not logged in
-    author_name VARCHAR(255) NOT NULL, -- To store name for unlogged users
+    user_id INT, 
+    author_name VARCHAR(255) NOT NULL, 
     comment_content TEXT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     is_approved BOOLEAN DEFAULT FALSE,
@@ -46,7 +46,7 @@ CREATE TABLE IF NOT EXISTS likes (
     post_id INT NOT NULL,
     user_id INT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE (post_id, user_id), -- Ensure a user can only like a post once
+    UNIQUE (post_id, user_id), 
     FOREIGN KEY (post_id) REFERENCES posts(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
